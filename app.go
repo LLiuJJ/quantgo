@@ -107,7 +107,7 @@ func (a *App) SyncStockHisData(stock_code string, token string) {
 		}
 
 		insertSQL = `INSERT INTO console_log (time, context) VALUES (?, ?)`
-		_, err = a.db.Exec(insertSQL, time.Now().GoString(), fmt.Sprintf("sync stock data success, code %s, date %s", stock_code, date))
+		_, err = a.db.Exec(insertSQL, time.Now().Format("2006-01-02 15:04:05"), fmt.Sprintf("sync stock data success, code %s, date %s", stock_code, date))
 		if err != nil {
 			log.Fatalf("Failed to insert data: %v", err)
 		}

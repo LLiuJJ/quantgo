@@ -1,5 +1,5 @@
 <script setup>
-import HelloWorld from './components/QuantGoConsole.vue'</script>
+import QuantGoConsole from './components/QuantGoConsole.vue'</script>
 
 <template>
   <QuantGoConsole/>
