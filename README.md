@@ -1,24 +1,15 @@
 # Quantgo
 A Quantitative Trading System.
 
-# Example
+# Demo
 
-1.Query the stock price of Apple Inc. in the past 100 days and plot it。
+![quantgo console](assets/console.png)
 
-```
- ./quantgo-cli plot_stock_chart -c AAPL -d 100
-```
+# Feature
 
-![apple stock price history 100 days](assets/newplot.png)
-
-2.Quantitative investment decision-making of Alibaba stock using turtle trading algorithm。
-
-```
-./quantgo-cli quant_cal -a turtle -c BABA -d 50
-```
-
-![BABA stock price history 50 days,buy decision](assets/decision.png)
-
-
-![BABA stock price portfolio using turtle trading algorithm](assets/portfolio.png)
-
+- Synchronize and view real-time stock data.
+- Support multiple quantitative investment strategies.
+- Email notification for selling investment signals.
+- Support multiple operating systems for Windows and MacOS.
+- Full desktop operation, quick to get started, no learning cost.
+- Easy to install, ready to use out of the box.
