@@ -14,6 +14,22 @@ export function GetConsoleLogs() {
   return window['go']['main']['App']['GetConsoleLogs']();
 }
 
+export function GetFundChartData(arg1, arg2, arg3) {
+  return window['go']['main']['App']['GetFundChartData'](arg1, arg2, arg3);
+}
+
+export function GetFundChartDataLabels(arg1, arg2, arg3) {
+  return window['go']['main']['App']['GetFundChartDataLabels'](arg1, arg2, arg3);
+}
+
+export function GetFundName(arg1) {
+  return window['go']['main']['App']['GetFundName'](arg1);
+}
+
+export function SyncFundHisData(arg1) {
+  return window['go']['main']['App']['SyncFundHisData'](arg1);
+}
+
 export function SyncStockHisData(arg1, arg2) {
   return window['go']['main']['App']['SyncStockHisData'](arg1, arg2);
 }
