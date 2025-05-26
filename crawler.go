@@ -133,10 +133,6 @@ func FetchFundData(fundCode string) []*FundDaliyData {
 			cumulativeNetValue := strings.TrimSpace(tds.Eq(2).Text())
 			dailyGrowthRate := strings.TrimSpace(tds.Eq(3).Text())
 
-			if strings.Contains(date, "暂无数据!") {
-				hasNext = false
-			}
-
 			fmt.Printf("日期: %s, 单位净值: %s, 累计净值: %s, 日增长率: %s\n",
 				date, unitNetValue, cumulativeNetValue, dailyGrowthRate)
 			unitNetValueFloat, err := strconv.ParseFloat(unitNetValue, 64)
@@ -151,7 +147,11 @@ func FetchFundData(fundCode string) []*FundDaliyData {
 			if err != nil {
 				fmt.Println("转换出错:", err)
 			}
-			fundDaliyData = append(fundDaliyData, &FundDaliyData{FundCode: fundCode, FundName: fundName, DateTime: date, UnitNetValue: unitNetValueFloat, CumulativeNetValue: cumulativeNetValueFloat, DailyGrowthRate: dailyGrowthRateFloat})
+			if strings.Contains(date, "暂无数据!") {
+				hasNext = false
+			} else {
+				fundDaliyData = append(fundDaliyData, &FundDaliyData{FundCode: fundCode, FundName: fundName, DateTime: date, UnitNetValue: unitNetValueFloat, CumulativeNetValue: cumulativeNetValueFloat, DailyGrowthRate: dailyGrowthRateFloat})
+			}
 		})
 		time.Sleep(time.Second * 2)
 		if !hasNext {

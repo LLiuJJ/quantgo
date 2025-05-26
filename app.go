@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"math"
 	"strings"
 	"time"
 
@@ -157,18 +158,18 @@ func (a *App) GetChartDataLabels(stock_code string, start_date string, end_date 
 	}
 	for rows.Next() {
 		var id int
-		var fund_code string
-		var fund_name string
+		var symbol string
 		var date string
-		var avg_net_worth float64
-		var accumulated_net_worth float64
-		var daily_growth_rate float64
-
-		err = rows.Scan(&id, &fund_code, &fund_name, &date, &avg_net_worth, &accumulated_net_worth, &daily_growth_rate)
+		var open float64
+		var high float64
+		var low float64
+		var close float64
+		var volume float64
+		err = rows.Scan(&id, &symbol, &date, &open, &high, &low, &close, &volume)
 		if err != nil {
 			log.Fatalf("Failed to scan row: %v", err)
 		}
-		fmt.Printf("id %d, fund_code %s, date %s, accumulated net worth %f \n", id, fund_code, strings.Split(date, "T")[0], accumulated_net_worth)
+		fmt.Printf("id %d, symbol %s, date %s, close %f \n", id, symbol, strings.Split(date, "T")[0], close)
 		labels = append(labels, strings.Split(date, "T")[0])
 	}
 	defer rows.Close()
@@ -200,6 +201,68 @@ func (a *App) GetFundName(fund_code string) string {
 	}
 	defer rows.Close()
 	return fundName
+}
+
+func (a *App) GetFundChartDataLastDaysLabels(fund_code string, days int64) []string {
+	var labels []string
+	querySQL := fmt.Sprintf("SELECT * FROM fund_daily_his WHERE fund_code = '%s' ORDER BY date DESC limit %d;", fund_code, days)
+	rows, err := a.db.Query(querySQL)
+	if err != nil {
+		log.Fatalf("Failed to query data: %v", err)
+	}
+	for rows.Next() {
+		var id int
+		var fund_code string
+		var fund_name string
+		var date string
+		var avg_net_worth float64
+		var accumulated_net_worth float64
+		var daily_growth_rate float64
+
+		err = rows.Scan(&id, &fund_code, &fund_name, &date, &avg_net_worth, &accumulated_net_worth, &daily_growth_rate)
+		if err != nil {
+			log.Fatalf("Failed to scan row: %v", err)
+		}
+		fmt.Printf("id %d, fund_code %s, date %s, accumulated net worth %f \n", id, fund_code, strings.Split(date, "T")[0], accumulated_net_worth)
+		labels = append(labels, strings.Split(date, "T")[0])
+	}
+	defer rows.Close()
+	fmt.Println(labels)
+	return labels
+}
+
+func (a *App) GetFundChartLastDaysData(fund_code string, days int64) [][]float64 {
+	const COLS = 3
+
+	var matrix [][]float64
+
+	querySQL := fmt.Sprintf("SELECT * FROM fund_daily_his WHERE fund_code = '%s' ORDER BY date DESC limit %d;", fund_code, days)
+	rows, err := a.db.Query(querySQL)
+	if err != nil {
+		log.Fatalf("Failed to query data: %v", err)
+	}
+	for rows.Next() {
+		var id int
+		var fund_code string
+		var fund_name string
+		var date string
+		var avg_net_worth float64
+		var accumulated_net_worth float64
+		var daily_growth_rate float64
+
+		err = rows.Scan(&id, &fund_code, &fund_name, &date, &avg_net_worth, &accumulated_net_worth, &daily_growth_rate)
+		if err != nil {
+			log.Fatalf("Failed to scan row: %v", err)
+		}
+		fmt.Printf("id %d, fund_code %s, date %s, accumulated net worth %f \n", id, fund_code, strings.Split(date, "T")[0], accumulated_net_worth)
+		rowData := make([]float64, COLS)
+		rowData[0] = avg_net_worth
+		rowData[1] = accumulated_net_worth
+		rowData[2] = daily_growth_rate
+		matrix = append(matrix, rowData)
+	}
+	defer rows.Close()
+	return matrix
 }
 
 func (a *App) GetFundChartDataLabels(fund_code string, start_date string, end_date string) []string {
@@ -301,4 +364,34 @@ func (a *App) GetChartData(stock_code string, start_date string, end_date string
 
 	defer rows.Close()
 	return matrix
+}
+
+func roundFloat(val float64, precision int) float64 {
+	shift := math.Pow(10, float64(precision))
+	return math.Round(val*shift) / shift
+}
+
+func (a *App) SimpleMovingAverage(data []float64, windowSize int) []float64 {
+	var sma []float64
+
+	if windowSize <= 0 || len(data) < windowSize {
+		return sma // 返回空切片
+	}
+
+	sum := 0.0
+	for i := 0; i < windowSize; i++ {
+		sum += data[i]
+	}
+
+	for i := 0; i < windowSize; i++ {
+		sma = append(sma, roundFloat(sum/float64(windowSize), 3))
+	}
+
+	// 滑动窗口
+	for i := windowSize; i < len(data); i++ {
+		sum += data[i] - data[i-windowSize]
+		sma = append(sma, roundFloat(sum/float64(windowSize), 3))
+	}
+
+	return sma
 }

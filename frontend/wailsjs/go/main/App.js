@@ -22,8 +22,20 @@ export function GetFundChartDataLabels(arg1, arg2, arg3) {
   return window['go']['main']['App']['GetFundChartDataLabels'](arg1, arg2, arg3);
 }
 
+export function GetFundChartDataLastDaysLabels(arg1, arg2) {
+  return window['go']['main']['App']['GetFundChartDataLastDaysLabels'](arg1, arg2);
+}
+
+export function GetFundChartLastDaysData(arg1, arg2) {
+  return window['go']['main']['App']['GetFundChartLastDaysData'](arg1, arg2);
+}
+
 export function GetFundName(arg1) {
   return window['go']['main']['App']['GetFundName'](arg1);
+}
+
+export function SimpleMovingAverage(arg1, arg2) {
+  return window['go']['main']['App']['SimpleMovingAverage'](arg1, arg2);
 }
 
 export function SyncFundHisData(arg1) {

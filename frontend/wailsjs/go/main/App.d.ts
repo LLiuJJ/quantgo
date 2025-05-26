@@ -11,7 +11,13 @@ export function GetFundChartData(arg1:string,arg2:string,arg3:string):Promise<Ar
 
 export function GetFundChartDataLabels(arg1:string,arg2:string,arg3:string):Promise<Array<string>>;
 
+export function GetFundChartDataLastDaysLabels(arg1:string,arg2:number):Promise<Array<string>>;
+
+export function GetFundChartLastDaysData(arg1:string,arg2:number):Promise<Array<any>>;
+
 export function GetFundName(arg1:string):Promise<string>;
+
+export function SimpleMovingAverage(arg1:Array<number>,arg2:number):Promise<Array<number>>;
 
 export function SyncFundHisData(arg1:string):Promise<void>;
 
