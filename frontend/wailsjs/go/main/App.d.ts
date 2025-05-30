@@ -17,6 +17,8 @@ export function GetFundChartLastDaysData(arg1:string,arg2:number):Promise<Array<
 
 export function GetFundName(arg1:string):Promise<string>;
 
+export function MovingAverageCrossover(arg1:Array<number>,arg2:number,arg3:number):Promise<Array<number>>;
+
 export function SimpleMovingAverage(arg1:Array<number>,arg2:number):Promise<Array<number>>;
 
 export function SyncFundHisData(arg1:string):Promise<void>;

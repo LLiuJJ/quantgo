@@ -34,6 +34,10 @@ export function GetFundName(arg1) {
   return window['go']['main']['App']['GetFundName'](arg1);
 }
 
+export function MovingAverageCrossover(arg1, arg2, arg3) {
+  return window['go']['main']['App']['MovingAverageCrossover'](arg1, arg2, arg3);
+}
+
 export function SimpleMovingAverage(arg1, arg2) {
   return window['go']['main']['App']['SimpleMovingAverage'](arg1, arg2);
 }

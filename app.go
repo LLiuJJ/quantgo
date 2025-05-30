@@ -5,9 +5,10 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
-	"math"
 	"strings"
 	"time"
+
+	"github.com/gonum/stat"
 
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -366,32 +367,55 @@ func (a *App) GetChartData(stock_code string, start_date string, end_date string
 	return matrix
 }
 
-func roundFloat(val float64, precision int) float64 {
-	shift := math.Pow(10, float64(precision))
-	return math.Round(val*shift) / shift
+func (a *App) SimpleMovingAverage(data []float64, windowSize int) []float64 {
+	sma := make([]float64, len(data))
+	for i := range data {
+		if i < windowSize-1 {
+			sma[i] = 0 // 不足窗口长度时不计算
+		} else {
+			windowData := data[i-windowSize+1 : i+1]
+			sma[i] = stat.Mean(windowData, nil)
+		}
+	}
+	return sma
 }
 
-func (a *App) SimpleMovingAverage(data []float64, windowSize int) []float64 {
-	var sma []float64
+func (a *App) MovingAverageCrossover(prices []float64, shortWindow, longWindow int) []int {
+	shortSMA := a.SimpleMovingAverage(prices, shortWindow)
+	longSMA := a.SimpleMovingAverage(prices, longWindow)
+	signals := make([]int, 0)
 
-	if windowSize <= 0 || len(data) < windowSize {
-		return sma // 返回空切片
+	var signal string
+	fmt.Printf("%5s | %7s | %7s | %7s\n", "Index", "Price", "Short", "Long")
+	fmt.Println("---------------------------------------------")
+
+	for i := 0; i < len(prices); i++ {
+		if i < longWindow {
+			continue
+		}
+
+		prevShort := shortSMA[i-1]
+		currShort := shortSMA[i]
+		prevLong := longSMA[i-1]
+		currLong := longSMA[i]
+
+		if prevShort <= prevLong && currShort > currLong {
+			signal = "BUY"
+		} else if prevShort >= prevLong && currShort < currLong {
+			signal = "SELL"
+		} else {
+			signal = ""
+		}
+
+		if signal != "" {
+			fmt.Printf("Signal at index %d: %s\n", i, signal)
+			signals = append(signals, len(prices)-i-1)
+			insertSQL := `INSERT INTO console_log (time, context) VALUES (?, ?)`
+			_, err := a.db.Exec(insertSQL, time.Now().Format("2006-01-02 15:04:05"), fmt.Sprintf("Signal at index %d: %s\n", i, signal))
+			if err != nil {
+				log.Fatalf("Failed to insert data: %v", err)
+			}
+		}
 	}
-
-	sum := 0.0
-	for i := 0; i < windowSize; i++ {
-		sum += data[i]
-	}
-
-	for i := 0; i < windowSize; i++ {
-		sma = append(sma, roundFloat(sum/float64(windowSize), 3))
-	}
-
-	// 滑动窗口
-	for i := windowSize; i < len(data); i++ {
-		sum += data[i] - data[i-windowSize]
-		sma = append(sma, roundFloat(sum/float64(windowSize), 3))
-	}
-
-	return sma
+	return signals
 }

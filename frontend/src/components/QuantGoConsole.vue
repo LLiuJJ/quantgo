@@ -10,7 +10,7 @@
     </select>
     <input id="code" type="text" placeholder="输入基金代码..."/>
     <input id="smaWin" type="text" placeholder="输入SMA窗口..."/>
-    <button class="btn" @click="updateData">查看基金</button>
+    <button class="btn" @click="updateData">执行策略</button>
     <button class="btn" @click="syncData">同步最新数据</button>
     <button class="btn"  @click="updateConsoleLog">更新运行日志</button>
     <br/>
@@ -23,7 +23,7 @@
 
 import * as echarts from 'echarts';
 import { onMounted } from 'vue';
-import { GetChartData, GetChartDataLabels, SyncStockHisData, SyncFundHisData, GetFundChartData, GetFundChartDataLabels, GetFundName, GetConsoleLogs, GetFundChartDataLastDaysLabels, GetFundChartLastDaysData, SimpleMovingAverage} from '../../wailsjs/go/main/App'
+import { GetChartData, GetChartDataLabels, SyncStockHisData, SyncFundHisData, GetFundChartData, GetFundChartDataLabels, GetFundName, GetConsoleLogs, GetFundChartDataLastDaysLabels, GetFundChartLastDaysData, SimpleMovingAverage, MovingAverageCrossover} from '../../wailsjs/go/main/App'
 
 async function updateConsoleLog() {
   const textarea = document.getElementById('consoleLog');
@@ -97,13 +97,26 @@ async function updateData() {
   const smaWinElement = document.getElementById("smaWin");
   const smaWinValue = Number(smaWinElement.value);
 
+  const smaWinValueMultiply3 = smaWinValue * 3;
 
   var xLabels = await GetFundChartDataLastDaysLabels(code, selectedValue);
   var fundData = await GetFundChartLastDaysData(code, selectedValue);
+  var singals = await MovingAverageCrossover(fundData.map(row => row[0]).reverse(), smaWinValue, smaWinValueMultiply3);
   var fundName = await GetFundName(code);
   var sam5 = await SimpleMovingAverage(fundData.map(row => row[0]).reverse(), smaWinValue);
+  var sma15 = await SimpleMovingAverage(fundData.map(row => row[0]).reverse(), smaWinValueMultiply3);
 
   var minValue = Math.min.apply(null, fundData.map(row => row[0]));
+
+  let markPoints = [];
+  for (let i = 0; i < singals.length; i++) {
+      markPoints.push(
+      { 
+        name: 'BUY', 
+        coord: [xLabels[singals[i]], fundData.map(row => row[0])[singals[i]]], 
+        value: fundData.map(row => row[0])[singals[i]]
+      });
+  }
 
   console.log(SimpleMovingAverage(fundData.map(row => row[0]).reverse(), smaWinValue));
   console.log(fundData.map(row => row[0]).reverse());
@@ -116,7 +129,7 @@ async function updateData() {
       data: xLabels.reverse()
     },
     legend: {
-      data: ['原始数据', 'SMA' + smaWinValue.toString()]
+      data: ['原始数据', 'SMA' + smaWinValue.toString(), 'SMA' + smaWinValueMultiply3.toString()]
     },
     yAxis: { type: 'value', min: minValue},
     series: [
@@ -125,16 +138,27 @@ async function updateData() {
         type: 'line',
         data: fundData.map(row => row[0]).reverse(),
         smooth: true,
-        itemStyle: { color: '#a3c6ed' },
-        lineStyle: { color: '#a3c6ed' }
+        itemStyle: { color: '#ff0000' },
+        lineStyle: { color: '#ff0000' },
+        markPoint: {
+            data: markPoints
+        }
       },
       {
         name: 'SMA' + smaWinValue.toString(),
         type: 'line',
         data: sam5,
         smooth: true,
-        itemStyle: { color: '#e3c9ed' },
-        lineStyle: { color: '#e3c9ed' }
+        itemStyle: { color: '#0000ff' },
+        lineStyle: { color: '#0000ff' }
+      },
+      {
+        name: 'SMA' + smaWinValueMultiply3.toString(),
+        type: 'line',
+        data: sma15,
+        smooth: true,
+        itemStyle: { color: '#000000' },
+        lineStyle: { color: '#000000' }
       } 
     ]
   })
