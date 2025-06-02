@@ -13,6 +13,8 @@
     <button class="btn" @click="updateData">执行策略</button>
     <button class="btn" @click="syncData">同步最新数据</button>
     <button class="btn"  @click="updateConsoleLog">更新运行日志</button>
+    <button class="btn" @click="startAgentBot">启用交易机器人</button>
+    <button class="btn" @click="stopAgentBot">停止</button>
     <br/>
     <div id="chart" style="width: 100%; height: 400px;"></div>
     <textarea id="consoleLog" placeholder="运行日志" style="width: 80%; height: 200px;"></textarea>
@@ -24,6 +26,8 @@
 import * as echarts from 'echarts';
 import { onMounted } from 'vue';
 import { GetChartData, GetChartDataLabels, SyncStockHisData, SyncFundHisData, GetFundChartData, GetFundChartDataLabels, GetFundName, GetConsoleLogs, GetFundChartDataLastDaysLabels, GetFundChartLastDaysData, SimpleMovingAverage, MovingAverageCrossover} from '../../wailsjs/go/main/App'
+
+var timerId = 0;
 
 async function updateConsoleLog() {
   const textarea = document.getElementById('consoleLog');
@@ -88,6 +92,20 @@ async function updateStockData() {
   chart.setOption(option);
 }
 
+async function startAgentBot() {
+  let count = 0;
+  timerId = setInterval(() => {
+    console.log(`第 ${count + 1} 次执行`);
+    count++;
+    updateConsoleLog();
+    updateData();
+    }, 10 * 1000);
+}
+
+async function stopAgentBot() {
+   clearInterval(timerId);
+}
+
 async function updateData() {
   const chart = echarts.init(document.getElementById('chart'));
   const inputElement = document.getElementById('code') as HTMLInputElement | null;
@@ -108,13 +126,15 @@ async function updateData() {
 
   var minValue = Math.min.apply(null, fundData.map(row => row[0]));
 
+  console.log(singals)
+
   let markPoints = [];
   for (let i = 0; i < singals.length; i++) {
       markPoints.push(
       { 
         name: 'BUY', 
-        coord: [xLabels[singals[i]], fundData.map(row => row[0])[singals[i]]], 
-        value: fundData.map(row => row[0])[singals[i]]
+        coord: [xLabels[singals[i].index], fundData.map(row => row[0])[singals[i].index]], 
+        value: singals[i].label
       });
   }
 

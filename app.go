@@ -380,10 +380,15 @@ func (a *App) SimpleMovingAverage(data []float64, windowSize int) []float64 {
 	return sma
 }
 
-func (a *App) MovingAverageCrossover(prices []float64, shortWindow, longWindow int) []int {
+type Signals struct {
+	Index int    `json:"index"`
+	Label string `json:"label"`
+}
+
+func (a *App) MovingAverageCrossover(prices []float64, shortWindow, longWindow int) []Signals {
 	shortSMA := a.SimpleMovingAverage(prices, shortWindow)
 	longSMA := a.SimpleMovingAverage(prices, longWindow)
-	signals := make([]int, 0)
+	signals_ := make([]Signals, 0)
 
 	var signal string
 	fmt.Printf("%5s | %7s | %7s | %7s\n", "Index", "Price", "Short", "Long")
@@ -399,17 +404,22 @@ func (a *App) MovingAverageCrossover(prices []float64, shortWindow, longWindow i
 		prevLong := longSMA[i-1]
 		currLong := longSMA[i]
 
+		sig := Signals{}
+
 		if prevShort <= prevLong && currShort > currLong {
 			signal = "BUY"
+			sig.Label = "BUY"
 		} else if prevShort >= prevLong && currShort < currLong {
 			signal = "SELL"
+			sig.Label = "SELL"
 		} else {
 			signal = ""
 		}
 
 		if signal != "" {
 			fmt.Printf("Signal at index %d: %s\n", i, signal)
-			signals = append(signals, len(prices)-i-1)
+			sig.Index = len(prices) - i - 1
+			signals_ = append(signals_, sig)
 			insertSQL := `INSERT INTO console_log (time, context) VALUES (?, ?)`
 			_, err := a.db.Exec(insertSQL, time.Now().Format("2006-01-02 15:04:05"), fmt.Sprintf("Signal at index %d: %s\n", i, signal))
 			if err != nil {
@@ -417,5 +427,6 @@ func (a *App) MovingAverageCrossover(prices []float64, shortWindow, longWindow i
 			}
 		}
 	}
-	return signals
+	fmt.Printf("收到信号信息: %+v\n", signals_)
+	return signals_
 }
