@@ -5,6 +5,8 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"math"
+	"sort"
 	"strings"
 	"time"
 
@@ -429,4 +431,43 @@ func (a *App) MovingAverageCrossover(prices []float64, shortWindow, longWindow i
 	}
 	fmt.Printf("收到信号信息: %+v\n", signals_)
 	return signals_
+}
+
+// 计算日收益率
+func (a *App) calculateReturns(prices []float64) []float64 {
+	var returns []float64
+	for i := 1; i < len(prices); i++ {
+		ret := (prices[i] - prices[i-1]) / prices[i-1]
+		returns = append(returns, ret)
+	}
+	return returns
+}
+
+// 计算VaR（历史模拟法）
+func (a *App) calculateVaR(returns []float64, confidenceLevel float64) float64 {
+	sort.Float64s(returns)
+
+	// 找到对应于 (1 - confidenceLevel) 的分位数位置
+	index := int(math.Floor(float64(len(returns)) * (1 - confidenceLevel)))
+	if index >= len(returns) {
+		index = len(returns) - 1
+	}
+	// VaR 是该分位点的损失值（取负表示最大潜在损失）
+	return -returns[index]
+}
+
+func (a *App) CalPricesVaR(prices []float64, confidence_level float64) float64 {
+	returns := a.calculateReturns(prices)
+	insertSQL := `INSERT INTO console_log (time, context) VALUES (?, ?)`
+	_, err := a.db.Exec(insertSQL, time.Now().Format("2006-01-02 15:04:05"), fmt.Sprintf("price returns: %v\n", returns))
+	if err != nil {
+		log.Fatalf("Failed to insert data: %v", err)
+	}
+	VaR := a.calculateVaR(returns, confidence_level)
+	insertSQL = `INSERT INTO console_log (time, context) VALUES (?, ?)`
+	_, err = a.db.Exec(insertSQL, time.Now().Format("2006-01-02 15:04:05"), fmt.Sprintf("price VaR (There is a %f percent chance that your daily loss rate is less than %f percent.): \n", confidence_level*100, VaR*100))
+	if err != nil {
+		log.Fatalf("Failed to insert data: %v", err)
+	}
+	return VaR
 }

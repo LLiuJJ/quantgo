@@ -25,7 +25,7 @@
 
 import * as echarts from 'echarts';
 import { onMounted } from 'vue';
-import { GetChartData, GetChartDataLabels, SyncStockHisData, SyncFundHisData, GetFundChartData, GetFundChartDataLabels, GetFundName, GetConsoleLogs, GetFundChartDataLastDaysLabels, GetFundChartLastDaysData, SimpleMovingAverage, MovingAverageCrossover} from '../../wailsjs/go/main/App'
+import { GetChartData, GetChartDataLabels, SyncStockHisData, SyncFundHisData, GetFundChartData, GetFundChartDataLabels, GetFundName, GetConsoleLogs, GetFundChartDataLastDaysLabels, GetFundChartLastDaysData, SimpleMovingAverage, MovingAverageCrossover, CalPricesVaR} from '../../wailsjs/go/main/App'
 
 var timerId = 0;
 
@@ -137,6 +137,8 @@ async function updateData() {
         value: singals[i].label
       });
   }
+
+  var priceVaR = CalPricesVaR(fundData.map(row => row[0]).reverse(), 0.95)
 
   console.log(SimpleMovingAverage(fundData.map(row => row[0]).reverse(), smaWinValue));
   console.log(fundData.map(row => row[0]).reverse());
