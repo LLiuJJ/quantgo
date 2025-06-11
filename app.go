@@ -465,9 +465,59 @@ func (a *App) CalPricesVaR(prices []float64, confidence_level float64) float64 {
 	}
 	VaR := a.calculateVaR(returns, confidence_level)
 	insertSQL = `INSERT INTO console_log (time, context) VALUES (?, ?)`
-	_, err = a.db.Exec(insertSQL, time.Now().Format("2006-01-02 15:04:05"), fmt.Sprintf("price VaR (There is a %f percent chance that your daily loss rate is less than %f percent.): \n", confidence_level*100, VaR*100))
+	_, err = a.db.Exec(insertSQL, time.Now().Format("2006-01-02 15:04:05"), fmt.Sprintf("price VaR (你有百分之 %f 的概率损失超过百分之 %f): \n", (1-confidence_level)*100, VaR*100))
 	if err != nil {
 		log.Fatalf("Failed to insert data: %v", err)
 	}
 	return VaR
+}
+
+func (a *App) MaximumDrawdown(prices []float64) float64 {
+	// 初始化峰值和最大回撤
+	peak := prices[0]
+	maxDrawdown := 0.0
+
+	// 遍历价格序列，计算最大回撤
+	for _, price := range prices {
+		if price > peak {
+			peak = price
+		}
+		drawdown := (peak - price) / peak
+		if drawdown > maxDrawdown {
+			maxDrawdown = drawdown
+		}
+	}
+
+	insertSQL := `INSERT INTO console_log (time, context) VALUES (?, ?)`
+	_, err := a.db.Exec(insertSQL, time.Now().Format("2006-01-02 15:04:05"), fmt.Sprintf("该股票的最大回撤（Maximum Drawdown）[可能遭受的最大损失比例] 计算结果为约百分之30 %f 。", maxDrawdown*100))
+	if err != nil {
+		log.Fatalf("Failed to insert data: %v", err)
+	}
+
+	return maxDrawdown * 100
+}
+
+type Point struct {
+	X float64
+	Y float64
+}
+
+func (a *App) NormalDistribution(prices []float64) []Point {
+	// 日回报率
+	var returns []float64
+	for i := 1; i < len(prices); i++ {
+		returnRate := (prices[i] - prices[i-1]) / prices[i-1]
+		fmt.Printf("日回报率：%f, ", returnRate)
+		returns = append(returns, returnRate)
+	}
+
+	sort.Float64s(returns)
+
+	var cdf []Point
+	n := float64(len(returns))
+	for i, value := range returns {
+		cdf = append(cdf, Point{X: value, Y: float64(i+1) / n})
+	}
+
+	return cdf
 }

@@ -16,6 +16,7 @@
     <button class="btn" @click="startAgentBot">启用交易机器人</button>
     <button class="btn" @click="stopAgentBot">停止</button>
     <br/>
+    <button class="btn" @click="seeReturnRateDistribution">收益率分布</button>
     <div id="chart" style="width: 100%; height: 400px;"></div>
     <textarea id="consoleLog" placeholder="运行日志" style="width: 80%; height: 200px;"></textarea>
   </div>
@@ -25,7 +26,7 @@
 
 import * as echarts from 'echarts';
 import { onMounted } from 'vue';
-import { GetChartData, GetChartDataLabels, SyncStockHisData, SyncFundHisData, GetFundChartData, GetFundChartDataLabels, GetFundName, GetConsoleLogs, GetFundChartDataLastDaysLabels, GetFundChartLastDaysData, SimpleMovingAverage, MovingAverageCrossover, CalPricesVaR} from '../../wailsjs/go/main/App'
+import { GetChartData, GetChartDataLabels, SyncStockHisData, SyncFundHisData, GetFundChartData, GetFundChartDataLabels, GetFundName, GetConsoleLogs, GetFundChartDataLastDaysLabels, GetFundChartLastDaysData, SimpleMovingAverage, MovingAverageCrossover, CalPricesVaR, MaximumDrawdown, NormalDistribution} from '../../wailsjs/go/main/App'
 
 var timerId = 0;
 
@@ -106,8 +107,63 @@ async function stopAgentBot() {
    clearInterval(timerId);
 }
 
+async function seeReturnRateDistribution() {
+  const chart = echarts.init(document.getElementById('chart'));
+  chart.clear();
+  const inputElement = document.getElementById('code') as HTMLInputElement | null;
+  const code = inputElement?.value || '';
+  const selectElement = document.getElementById("daysSelect");
+  const selectedValue = Number(selectElement.value);
+  var fundName = await GetFundName(code);
+
+  var xLabels = await GetFundChartDataLastDaysLabels(code, selectedValue);
+  var fundData = await GetFundChartLastDaysData(code, selectedValue);
+
+  var distribution = await NormalDistribution(fundData.map(row => row[0]).reverse())
+
+  let xDatas = [];
+  let yDatas = [];
+  for (let point in distribution) {
+    xDatas.push(point.X);
+    yDatas.push(point.Y);
+  }
+
+  let seriesData = distribution.map(item => [item.X, item.Y]);
+
+  chart.setOption({
+        title: {
+            text: fundName + '日累积收益 CDF 图', left: 'center', padding: [0, 0, 20, 20]
+        },
+        tooltip: {
+            trigger: 'axis',
+            formatter: function(params) {
+                return `值: ${params[0].value[0]}<br/>累积概率: ${params[0].value[1].toFixed(4)}`;
+            }
+        },
+        xAxis: {
+            type: 'value',
+            name: '值'
+        },
+        yAxis: {
+            type: 'value',
+            name: '累积概率',
+            min: 0,
+            max: 1
+        },
+        series: [{
+            type: 'line',
+            data: seriesData,
+            showSymbol: false,
+            lineStyle: {
+                color: '#5470c6'
+            }
+        }]
+    })
+}
+
 async function updateData() {
   const chart = echarts.init(document.getElementById('chart'));
+  chart.clear();
   const inputElement = document.getElementById('code') as HTMLInputElement | null;
   const code = inputElement?.value || '';
   const selectElement = document.getElementById("daysSelect");
@@ -138,10 +194,14 @@ async function updateData() {
       });
   }
 
-  var priceVaR = CalPricesVaR(fundData.map(row => row[0]).reverse(), 0.95)
+  var priceVaR = await CalPricesVaR(fundData.map(row => row[0]).reverse(), 0.95)
+
+  var priceDrawdown = await MaximumDrawdown(fundData.map(row => row[0]).reverse())
+
 
   console.log(SimpleMovingAverage(fundData.map(row => row[0]).reverse(), smaWinValue));
   console.log(fundData.map(row => row[0]).reverse());
+
 
   chart.setOption({
     title: { text: fundName + '-净值数据', left: 'center', padding: [20, 0, 0, 0]},
@@ -189,6 +249,7 @@ async function updateData() {
 
 onMounted(async () => {
   const chart = echarts.init(document.getElementById('chart'));
+
   var xLabels = await GetFundChartDataLastDaysLabels('021030', 30);
   var fundData = await GetFundChartLastDaysData('021030', 30);
   var fundName = await GetFundName('021030')
