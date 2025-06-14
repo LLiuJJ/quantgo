@@ -395,6 +395,8 @@ func (a *App) MovingAverageCrossover(prices []float64, shortWindow, longWindow i
 	var signal string
 	fmt.Printf("%5s | %7s | %7s | %7s\n", "Index", "Price", "Short", "Long")
 	fmt.Println("---------------------------------------------")
+	cash := 10000.0
+	position := 0
 
 	for i := 0; i < len(prices); i++ {
 		if i < longWindow {
@@ -411,9 +413,14 @@ func (a *App) MovingAverageCrossover(prices []float64, shortWindow, longWindow i
 		if prevShort <= prevLong && currShort > currLong {
 			signal = "BUY"
 			sig.Label = "BUY"
+			shares := int(cash / prices[i])
+			position = shares
+			cash -= float64(shares) * prices[i] //  买入 shares 份
 		} else if prevShort >= prevLong && currShort < currLong {
 			signal = "SELL"
 			sig.Label = "SELL"
+			cash += float64(position) * prices[i] // 全部卖出
+			position = 0
 		} else {
 			signal = ""
 		}
@@ -423,7 +430,7 @@ func (a *App) MovingAverageCrossover(prices []float64, shortWindow, longWindow i
 			sig.Index = len(prices) - i - 1
 			signals_ = append(signals_, sig)
 			insertSQL := `INSERT INTO console_log (time, context) VALUES (?, ?)`
-			_, err := a.db.Exec(insertSQL, time.Now().Format("2006-01-02 15:04:05"), fmt.Sprintf("Signal at index %d: %s\n", i, signal))
+			_, err := a.db.Exec(insertSQL, time.Now().Format("2006-01-02 15:04:05"), fmt.Sprintf("Signal at index %d: %s, 现金 %f \n", i, signal, cash))
 			if err != nil {
 				log.Fatalf("Failed to insert data: %v", err)
 			}
@@ -469,7 +476,7 @@ func (a *App) CalPricesVaR(prices []float64, confidence_level float64) float64 {
 	if err != nil {
 		log.Fatalf("Failed to insert data: %v", err)
 	}
-	return VaR
+	return math.Round((VaR*100)*1000) / 1000
 }
 
 func (a *App) MaximumDrawdown(prices []float64) float64 {
@@ -489,12 +496,11 @@ func (a *App) MaximumDrawdown(prices []float64) float64 {
 	}
 
 	insertSQL := `INSERT INTO console_log (time, context) VALUES (?, ?)`
-	_, err := a.db.Exec(insertSQL, time.Now().Format("2006-01-02 15:04:05"), fmt.Sprintf("该股票的最大回撤（Maximum Drawdown）[可能遭受的最大损失比例] 计算结果为约百分之30 %f 。", maxDrawdown*100))
+	_, err := a.db.Exec(insertSQL, time.Now().Format("2006-01-02 15:04:05"), fmt.Sprintf("该股票的最大回撤（Maximum Drawdown）[可能遭受的最大损失] 计算结果为约百分之 %f 。", maxDrawdown*100))
 	if err != nil {
 		log.Fatalf("Failed to insert data: %v", err)
 	}
-
-	return maxDrawdown * 100
+	return math.Round((maxDrawdown*100)*1000) / 1000
 }
 
 type Point struct {

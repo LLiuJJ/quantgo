@@ -17,6 +17,7 @@
     <button class="btn" @click="stopAgentBot">停止</button>
     <br/>
     <button class="btn" @click="seeReturnRateDistribution">收益率分布</button>
+    <pre id="indicators" style="white-space: pre-line;"></pre>
     <div id="chart" style="width: 100%; height: 400px;"></div>
     <textarea id="consoleLog" placeholder="运行日志" style="width: 80%; height: 200px;"></textarea>
   </div>
@@ -195,9 +196,9 @@ async function updateData() {
   }
 
   var priceVaR = await CalPricesVaR(fundData.map(row => row[0]).reverse(), 0.95)
-
   var priceDrawdown = await MaximumDrawdown(fundData.map(row => row[0]).reverse())
 
+  document.getElementById('indicators').textContent = 'VaR(%5): ' + priceVaR + '  MaximumDrawdown: ' + priceDrawdown;
 
   console.log(SimpleMovingAverage(fundData.map(row => row[0]).reverse(), smaWinValue));
   console.log(fundData.map(row => row[0]).reverse());
