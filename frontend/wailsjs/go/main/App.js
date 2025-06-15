@@ -46,6 +46,10 @@ export function MovingAverageCrossover(arg1, arg2, arg3) {
   return window['go']['main']['App']['MovingAverageCrossover'](arg1, arg2, arg3);
 }
 
+export function MovingAverageCrossoverProfit(arg1, arg2, arg3) {
+  return window['go']['main']['App']['MovingAverageCrossoverProfit'](arg1, arg2, arg3);
+}
+
 export function NormalDistribution(arg1) {
   return window['go']['main']['App']['NormalDistribution'](arg1);
 }

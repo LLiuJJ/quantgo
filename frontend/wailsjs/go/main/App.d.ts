@@ -24,6 +24,8 @@ export function MaximumDrawdown(arg1:Array<number>):Promise<number>;
 
 export function MovingAverageCrossover(arg1:Array<number>,arg2:number,arg3:number):Promise<Array<main.Signals>>;
 
+export function MovingAverageCrossoverProfit(arg1:Array<number>,arg2:number,arg3:number):Promise<Array<main.DailyCash>>;
+
 export function NormalDistribution(arg1:Array<number>):Promise<Array<main.Point>>;
 
 export function SimpleMovingAverage(arg1:Array<number>,arg2:number):Promise<Array<number>>;

@@ -387,6 +387,52 @@ type Signals struct {
 	Label string `json:"label"`
 }
 
+const INIT_CASH = 10000.0
+
+type DailyCash struct {
+	Index  int     `json:"index"`
+	Cash   float64 `json:"cash"`
+	Assets float64 `json:"assets"`
+}
+
+func (a *App) MovingAverageCrossoverProfit(prices []float64, shortWindow, longWindow int) []DailyCash {
+	shortSMA := a.SimpleMovingAverage(prices, shortWindow)
+	longSMA := a.SimpleMovingAverage(prices, longWindow)
+	fmt.Printf("%5s | %7s | %7s | %7s\n", "Index", "Price", "Short", "Long")
+	fmt.Println("---------------------------------------------")
+	// 初始现金
+	cash := INIT_CASH
+	// 持有份额
+	position := 0
+
+	daliyCash := make([]DailyCash, 0)
+
+	for i := range prices {
+		if i < longWindow {
+			daliyCash = append(daliyCash, DailyCash{Index: i, Cash: INIT_CASH, Assets: INIT_CASH})
+			continue
+		}
+
+		prevShort := shortSMA[i-1]
+		currShort := shortSMA[i]
+		prevLong := longSMA[i-1]
+		currLong := longSMA[i]
+
+		if prevShort <= prevLong && currShort > currLong {
+			//  买入 shares 份
+			shares := int(cash / prices[i])
+			position = shares
+			cash -= float64(shares) * prices[i]
+		} else if prevShort >= prevLong && currShort < currLong {
+			// 全部卖出
+			cash += float64(position) * prices[i]
+			position = 0
+		}
+		daliyCash = append(daliyCash, DailyCash{Index: i, Cash: cash, Assets: cash + prices[i]*float64(position)})
+	}
+	return daliyCash
+}
+
 func (a *App) MovingAverageCrossover(prices []float64, shortWindow, longWindow int) []Signals {
 	shortSMA := a.SimpleMovingAverage(prices, shortWindow)
 	longSMA := a.SimpleMovingAverage(prices, longWindow)

@@ -17,6 +17,7 @@
     <button class="btn" @click="stopAgentBot">停止</button>
     <br/>
     <button class="btn" @click="seeReturnRateDistribution">收益率分布</button>
+    <button class="btn" @click="seeBacktestingAsset">回测资产曲线</button>
     <pre id="indicators" style="white-space: pre-line;"></pre>
     <div id="chart" style="width: 100%; height: 400px;"></div>
     <textarea id="consoleLog" placeholder="运行日志" style="width: 80%; height: 200px;"></textarea>
@@ -27,7 +28,7 @@
 
 import * as echarts from 'echarts';
 import { onMounted } from 'vue';
-import { GetChartData, GetChartDataLabels, SyncStockHisData, SyncFundHisData, GetFundChartData, GetFundChartDataLabels, GetFundName, GetConsoleLogs, GetFundChartDataLastDaysLabels, GetFundChartLastDaysData, SimpleMovingAverage, MovingAverageCrossover, CalPricesVaR, MaximumDrawdown, NormalDistribution} from '../../wailsjs/go/main/App'
+import { GetChartData, GetChartDataLabels, SyncStockHisData, SyncFundHisData, GetFundChartData, GetFundChartDataLabels, GetFundName, GetConsoleLogs, GetFundChartDataLastDaysLabels, GetFundChartLastDaysData, SimpleMovingAverage, MovingAverageCrossover, CalPricesVaR, MaximumDrawdown, NormalDistribution, MovingAverageCrossoverProfit} from '../../wailsjs/go/main/App'
 
 var timerId = 0;
 
@@ -162,6 +163,46 @@ async function seeReturnRateDistribution() {
     })
 }
 
+async function seeBacktestingAsset() {
+  const chart = echarts.init(document.getElementById('chart'));
+  chart.clear();
+
+  const inputElement = document.getElementById('code') as HTMLInputElement | null;
+  const code = inputElement?.value || '';
+  const selectElement = document.getElementById("daysSelect");
+  const selectedValue = Number(selectElement.value);
+  const smaWinElement = document.getElementById("smaWin");
+  const smaWinValue = Number(smaWinElement.value);
+
+  const smaWinValueMultiply3 = smaWinValue * 3;
+
+  var xLabels = await GetFundChartDataLastDaysLabels(code, selectedValue);
+  var fundData = await GetFundChartLastDaysData(code, selectedValue);
+  var singals = await MovingAverageCrossover(fundData.map(row => row[0]).reverse(), smaWinValue, smaWinValueMultiply3);
+  var profits = await MovingAverageCrossoverProfit(fundData.map(row => row[0]).reverse(), smaWinValue, smaWinValueMultiply3);
+  var fundName = await GetFundName(code);
+  // console.log(profits.map(profit => profit.assets))
+
+  chart.setOption({
+    title: { text: fundName + ' 回测预估资产变化（初始资金 10000）', left: 'center'},
+    tooltip: { trigger: 'axis' },
+    xAxis: {
+      type: 'category',
+      data: xLabels.reverse()
+    },
+    yAxis: { type: 'value'},
+    series: [{
+      name: '数值',
+      type: 'line',
+      data: profits.map(profit => profit.assets),
+      smooth: true,
+      itemStyle: { color: '#a3c6ed' },
+      lineStyle: { color: '#a3c6ed' }
+    }]
+  })
+    
+}
+
 async function updateData() {
   const chart = echarts.init(document.getElementById('chart'));
   chart.clear();
@@ -177,6 +218,7 @@ async function updateData() {
   var xLabels = await GetFundChartDataLastDaysLabels(code, selectedValue);
   var fundData = await GetFundChartLastDaysData(code, selectedValue);
   var singals = await MovingAverageCrossover(fundData.map(row => row[0]).reverse(), smaWinValue, smaWinValueMultiply3);
+  var profit = await MovingAverageCrossoverProfit(fundData.map(row => row[0]).reverse(), smaWinValue, smaWinValueMultiply3);
   var fundName = await GetFundName(code);
   var sam5 = await SimpleMovingAverage(fundData.map(row => row[0]).reverse(), smaWinValue);
   var sma15 = await SimpleMovingAverage(fundData.map(row => row[0]).reverse(), smaWinValueMultiply3);
