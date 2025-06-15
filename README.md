@@ -1,9 +1,16 @@
 # Quantgo
-A Quantitative Trading System.
+一个零门槛桌面化的量化交易系统。
 
 # Demo
 
-![quantgo console](assets/console.png)
+- 策略执行
+![quantgo console](assets/demo01.png)
+
+- 收益回测
+![quantgo console](assets/demo02.png)
+
+- 日收益率分布
+![quantgo console](assets/demo03.png)
 
 # Feature
 

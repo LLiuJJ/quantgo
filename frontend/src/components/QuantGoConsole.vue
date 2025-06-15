@@ -293,10 +293,16 @@ async function updateData() {
 onMounted(async () => {
   const chart = echarts.init(document.getElementById('chart'));
 
-  var xLabels = await GetFundChartDataLastDaysLabels('021030', 30);
-  var fundData = await GetFundChartLastDaysData('021030', 30);
+  var xLabels = await GetFundChartDataLastDaysLabels('021030', 60);
+  var fundData = await GetFundChartLastDaysData('021030', 60);
   var fundName = await GetFundName('021030')
   var minValue = Math.min.apply(null, fundData.map(row => row[0]));
+  const inputElement = document.getElementById('code') as HTMLInputElement | null;
+  inputElement.value = '021030';
+  const smaWinElement = document.getElementById("smaWin");
+  smaWinElement.value = 3;
+  const dayselectElement = document.getElementById("daysSelect");
+  dayselectElement.value = 60;
 
   chart.setOption({
     title: { text: fundName + '净值数据', left: 'center'},
